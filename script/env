@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# Source from the project root. Override RUBY_BIN to use another Ruby 3.3.3 installation.
+export PATH="${RUBY_BIN:-/Users/kevinshouse/.rvm/rubies/ruby-3.3.3/bin}:$PWD/.tools/gems/bin:$PATH"
+export GEM_HOME="$PWD/.tools/gems"
+export GEM_PATH="$GEM_HOME:$(ruby -e 'puts Gem.default_dir')"
+export BUNDLE_PATH="$GEM_HOME"
+
+export RUBOCOP_CACHE_ROOT="$PWD/tmp/rubocop"
+export SE_CACHE_PATH="$PWD/.tools/selenium"

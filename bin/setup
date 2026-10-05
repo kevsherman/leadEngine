@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+source script/env
+bundle check || bundle install
+script/gmail_keys
+script/postgres start
+bin/rails db:prepare db:seed tailwindcss:build
+if [ "${1:-}" != "--skip-server" ]; then exec bin/dev; fi

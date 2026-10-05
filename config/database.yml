@@ -1,0 +1,32 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  host: <%= ENV.fetch("PGHOST", "127.0.0.1") %>
+  port: <%= ENV.fetch("PGPORT", 55432) %>
+  username: <%= ENV.fetch("PGUSER", ENV.fetch("USER")) %>
+  password: <%= ENV["PGPASSWORD"] %>
+  max_connections: <%= ENV.fetch("RAILS_MAX_THREADS", 5) %>
+development:
+  primary:
+    <<: *default
+    database: inquiry_to_quote_development
+  queue:
+    <<: *default
+    database: inquiry_to_quote_development_queue
+    migrations_paths: db/queue_migrate
+test:
+  primary:
+    <<: *default
+    database: inquiry_to_quote_test
+  queue:
+    <<: *default
+    database: inquiry_to_quote_test_queue
+    migrations_paths: db/queue_migrate
+production:
+  primary:
+    <<: *default
+    url: <%= ENV["DATABASE_URL"] %>
+  queue:
+    <<: *default
+    url: <%= ENV["QUEUE_DATABASE_URL"] %>
+    migrations_paths: db/queue_migrate

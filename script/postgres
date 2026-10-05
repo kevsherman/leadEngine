@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$(dirname "$0")/.."
+PG_BIN="${PG_BIN:-$PWD/.tools/postgres/bin}"
+if [ ! -x "$PG_BIN/postgres" ]; then
+  for candidate in /opt/homebrew/opt/postgresql@17/bin /usr/local/opt/postgresql@17/bin; do
+    if [ -x "$candidate/postgres" ]; then PG_BIN="$candidate"; break; fi
+  done
+fi
+if [ ! -x "$PG_BIN/postgres" ]; then
+  echo "PostgreSQL 17 is required. Install it and set PG_BIN to its bin directory."
+  exit 1
+fi
+PG_DATA="$PWD/.local/postgres17"
+mkdir -p .local
+case "${1:-start}" in
+  start)
+    if [ ! -f "$PG_DATA/PG_VERSION" ]; then
+      "$PG_BIN/initdb" -D "$PG_DATA" -A trust --no-locale -E UTF8
+    fi
+    if ! "$PG_BIN/pg_ctl" -D "$PG_DATA" status >/dev/null 2>&1; then
+      "$PG_BIN/pg_ctl" -D "$PG_DATA" -l "$PWD/.local/postgres.log" -o "-h 127.0.0.1 -p ${PGPORT:-55432} -k $PWD/.local" start
+    fi
+    ;;
+  stop) "$PG_BIN/pg_ctl" -D "$PG_DATA" stop -m fast ;;
+  status) "$PG_BIN/pg_ctl" -D "$PG_DATA" status ;;
+  *) echo "Usage: script/postgres [start|stop|status]"; exit 1 ;;
+esac

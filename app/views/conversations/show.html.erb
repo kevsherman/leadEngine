@@ -1,0 +1,54 @@
+<%= turbo_frame_tag "workspace", class: "workspace", data: { controller: (@draft.status == "queued" ? "delivery-status" : nil) } do %>
+  <%= render "queue" %>
+  <main class="conversation-panel">
+    <div class="conversation-heading"><p class="eyebrow"><%= @conversation.category %> / <%= @conversation.language %></p><h1 class="text-2xl font-semibold mt-2"><%= @conversation.subject %></h1><p class="muted mt-2 text-sm"><%= @conversation.customer_name %> &lt;<%= @conversation.customer_email %>&gt;</p></div>
+    <p class="demo-note mt-4"><%= @conversation.email_provider == "gmail" ? "Gmail conversation · live email requires approval and explicit confirmation" : "Example conversation · fake email only" %></p>
+    <section class="thread" aria-label="Email history">
+      <% @conversation.messages.each do |message| %>
+        <article class="message <%= message.direction %>"><div class="flex justify-between gap-3"><strong><%= message.direction == "inbound" ? @conversation.customer_name : "Breeze Block Canada" %></strong><time class="muted text-xs"><%= message.created_at.strftime("%b %-d · %H:%M") %></time></div><p class="muted text-xs mt-1"><%= message.sender %> → <%= message.recipient %></p><% if message.direction == "outbound" %><p class="demo-note mt-3"><%= message.gmail_connection_id ? "Gmail email" : "Simulated email" %> · <%= message.provider_id %></p><% end %><div class="message-body"><%= simple_format(message.body) %></div><% if message.attachments.any? %><p class="muted text-xs mt-3">Attachments (metadata only; open in Gmail): <%= message.attachments.map { |item| item["filename"] }.join(", ") %></p><% end %></article>
+      <% end %>
+    </section>
+    <section class="draft-card" aria-label="Reply draft">
+      <div class="flex justify-between items-center mb-4"><h2 class="text-lg font-semibold">Reply draft</h2><span class="status-pill"><%= @draft.status.humanize %></span></div>
+      <% if @draft.editable? %>
+        <%= form_with model: @draft, data: { turbo_frame: "_top", controller: "draft", action: "input->draft#changed" } do |form| %>
+          <%= form.hidden_field :lock_version %>
+          <div class="field"><%= form.label :to, "To" %><%= form.email_field :to, required: true %></div>
+          <div class="field"><%= form.label :cc, "CC (optional, comma-separated)" %><%= form.text_field :cc %></div>
+          <div class="field"><%= form.label :subject %><%= form.text_field :subject, required: true %></div>
+          <div class="field"><%= form.label :body, "Reply" %><%= form.text_area :body, rows: 10, required: true %></div>
+          <p class="muted text-xs mb-4" data-draft-target="hint">Save edits before reviewing. Approval applies to the saved content.</p>
+          <%= form.submit "Save draft", class: "btn secondary" %>
+          <%= link_to "Review saved reply", review_email_draft_path(@draft), class: "btn secondary", data: { turbo_frame: "_top" } %>
+        <% end %>
+        <% if @draft.status == "approved" %><div class="approved-box mt-4"><p>Approved by <%= @draft.approved_by.email %> at <%= @draft.approved_at.strftime("%H:%M") %>.</p><p class="text-xs mt-1">Saving any edits removes this approval.</p><% if @conversation.email_provider == "gmail" %>
+          <%= form_with url: send_reply_email_draft_path(@draft), data: { turbo_frame: "_top" }, class: "mt-3" do |form| %>
+            <%= hidden_field_tag :lock_version, @draft.lock_version %>
+            <label class="flex gap-3 text-sm"><%= check_box_tag :confirm_live, "1", false, required: true, style: "width:auto" %><span>Send this exact approved reply as a real email to <strong><%= @draft.to %></strong><%= @draft.cc.present? ? " (CC: #{@draft.cc})" : "" %>.</span></label>
+            <%= form.submit "Send approved reply through Gmail", class: "btn primary mt-3" %>
+          <% end %>
+        <% else %><%= button_to "Simulate sending approved reply", send_reply_email_draft_path(@draft), params: { lock_version: @draft.lock_version }, class: "btn primary mt-3", form: { data: { turbo_frame: "_top" } } %><% end %></div><% end %>
+      <% else %>
+        <p class="muted">Reply status: <%= @draft.status.humanize %>. The reviewed content is locked.</p>
+        <% if @draft.status == "queued" %><p class="demo-note mt-3">Waiting for Solid Queue · this screen refreshes automatically. Start bin/dev if the worker is stopped.</p><% end %>
+        <% if @draft.send_operation&.error.present? %><p role="alert" class="muted text-sm mt-3"><%= @draft.send_operation.error.humanize %></p><% end %>
+        <% if @conversation.email_provider == "gmail" %>
+          <% if %w[sending unknown].include?(@draft.send_operation&.status) %>
+            <p class="muted text-sm mt-3">Delivery may have succeeded. Check Gmail Sent mail; this email will not be resent automatically.</p><%= button_to "Check Gmail send status", reconcile_email_draft_path(@draft), class: "btn secondary mt-4", form: { data: { turbo_frame: "_top" } } %>
+          <% elsif @draft.status == "failed" || @draft.send_operation&.status == "queued" %>
+            <%= form_with url: send_reply_email_draft_path(@draft), class: "mt-4", data: { turbo_frame: "_top" } do |form| %><%= hidden_field_tag :lock_version, @draft.lock_version %><label class="flex gap-3 text-sm"><%= check_box_tag :confirm_live, "1", false, required: true, style: "width:auto" %><span>I confirm retrying this exact approved live email to <%= @draft.to %>.</span></label><%= form.submit "Retry approved Gmail send", class: "btn secondary mt-3" %><% end %>
+          <% end %>
+        <% elsif @draft.status == "failed" || @draft.send_operation&.status == "queued" %><%= button_to "Retry simulated sending", send_reply_email_draft_path(@draft), params: { lock_version: @draft.lock_version }, class: "btn secondary mt-4", form: { data: { turbo_frame: "_top" } } %><% end %>
+        <% if %w[sent blocked cancelled failed].include?(@draft.status) %><%= button_to "Start a new reply draft", new_reply_email_draft_path(@draft), class: "btn secondary mt-4", form: { data: { turbo_frame: "_top" } } %><% end %>
+        <%= link_to "View saved reply", review_email_draft_path(@draft), class: "text-link mt-4 inline-block", data: { turbo_frame: "_top" } %>
+      <% end %>
+    </section>
+  </main>
+  <aside class="details-panel"><p class="eyebrow">PROJECT CONTEXT</p><h2 class="text-lg font-semibold mt-2"><%= @conversation.project %></h2><p class="muted text-xs mt-2">Facts from the customer message.<br>Unknown values stay unknown.</p>
+    <dl class="context-list"><% @conversation.known_fields.each do |label, value| %><div><dt><%= label.humanize %></dt><dd><%= value %></dd><small>Source: initial inquiry</small></div><% end %></dl>
+    <div class="missing-box"><h3 class="font-semibold">Still to confirm</h3><ul class="mt-3"><% @conversation.missing_fields.each do |field| %><li><%= field %></li><% end %></ul></div>
+    <div class="mt-7"><p class="eyebrow">NEXT ACTION</p><p class="text-sm mt-2"><%= @conversation.next_action %></p></div>
+    <div class="mt-7"><p class="eyebrow">ACTIVITY</p><% @conversation.audit_events.order(:created_at, :id).each do |event| %><div class="audit-row"><%= event.action.humanize %><small><%= event.created_at.strftime("%b %-d · %H:%M") %></small></div><% end %></div>
+    <p class="muted text-xs mt-7">Quotes, pricing, payments and shipment booking arrive in later slices.</p>
+  </aside>
+<% end %>

@@ -1,0 +1,18 @@
+<main class="login-card">
+  <p class="eyebrow">THE OPERATOR WORKSPACE</p>
+  <h1 class="text-3xl font-semibold">A clearer path from<br>inquiry to reply.</h1>
+  <p class="muted mt-4 mb-8">Review customer conversations and approve every reply.</p>
+  <%= form_with url: session_path, data: { controller: "demo-login" } do |form| %>
+    <div class="field"><%= form.label :email, "Operator email" %><%= form.email_field :email, required: true, autocomplete: "username", autofocus: true, data: { demo_login_target: "email" } %></div>
+    <div class="field"><%= form.label :password %><%= form.password_field :password, required: true, autocomplete: "current-password", data: { demo_login_target: "password" } %></div>
+    <% if Rails.env.development? && ENV["OPERATOR_EMAIL"].blank? && ENV["OPERATOR_PASSWORD"].blank? %>
+      <div class="approved-box my-4">
+        <p>Local demo email: <code>kevin@example.test</code></p>
+        <p class="mt-1">Password: <code>local-demo-password</code></p>
+        <button type="button" class="btn secondary mt-3" data-action="demo-login#fill">Fill demo login</button>
+      </div>
+    <% end %>
+    <%= form.submit "Sign in", class: "btn primary w-full mt-3" %>
+  <% end %>
+  <p class="muted text-xs mt-7">Development preview. Replies are stored locally and never delivered to a mailbox.</p>
+</main>

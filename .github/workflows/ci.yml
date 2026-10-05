@@ -1,0 +1,35 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=3
+    env:
+      PGHOST: 127.0.0.1
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      RAILS_ENV: test
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - run: bin/rails db:prepare tailwindcss:build
+      - run: bin/rails test
+      - run: bin/rails test:system
+      - run: bin/rubocop
+      - run: bin/brakeman --no-pager
+      - run: bin/bundler-audit
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: browser-screenshots
+          path: tmp/screenshots

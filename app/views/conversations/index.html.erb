@@ -1,0 +1,4 @@
+<%= turbo_frame_tag "workspace", class: "workspace" do %>
+  <%= render "queue" %>
+  <main class="empty-state"><span class="empty-icon">▦</span><p class="eyebrow mt-6">MAKE ROOM FOR THE NEXT PROJECT</p><h2 class="text-3xl font-semibold">Every inquiry, in one place.</h2><p class="muted mt-4">Choose a conversation to read its history,<br>edit the reply, and review before sending.</p><p class="demo-note mt-8">Nothing leaves this workspace. All sends are simulated.</p></main>
+<% end %>

@@ -1,0 +1,20 @@
+<aside class="queue-panel">
+  <div class="queue-heading"><p class="eyebrow">YOUR WORKSPACE</p><h1 class="text-2xl font-semibold">Conversations <span class="count"><%= @conversations.size %></span></h1><p class="muted text-sm mt-2">Oldest actionable inquiries first</p></div>
+  <%= form_with url: conversations_path, method: :get, data: { turbo_frame: "workspace" }, class: "queue-filters" do |form| %>
+    <%= form.search_field :search, value: params[:search], placeholder: "Search customer or project", aria: { label: "Search conversations" } %>
+    <div class="flex gap-2 mt-2"><%= form.select :status, [["All conversations", ""], ["Needs review", "needs_review"], ["Waiting for customer", "waiting_for_customer"]], selected: params[:status] %><%= form.submit "Filter", class: "btn secondary" %></div>
+  <% end %>
+  <nav aria-label="Conversation queue">
+    <% @conversations.each do |conversation| %>
+      <%= link_to conversation_path(conversation, search: params[:search], status: params[:status]), data: { turbo_frame: "workspace", turbo_action: "advance" }, class: "queue-row #{'selected' if @conversation == conversation}" do %>
+        <div class="flex justify-between gap-2"><strong><%= conversation.customer_name %></strong><span class="muted text-xs"><%= time_ago_in_words(conversation.last_activity_at) %></span></div>
+        <p class="row-subject"><%= conversation.subject %></p>
+        <p class="muted text-xs"><%= conversation.project %> · <%= conversation.category %></p>
+        <div class="mt-3"><span class="status-pill <%= conversation.status %>"><%= conversation.status.humanize %></span></div>
+        <p class="next-action"><%= conversation.next_action %></p>
+      <% end %>
+    <% end %>
+    <% if @conversations.empty? %><p class="p-6 muted">No conversations match these filters.</p><% end %>
+  </nav>
+  <div class="queue-foot"><%= link_to "Gmail status & settings", gmail_connection_path, class: "text-link", data: { turbo_frame: "_top" } %><br>Fake examples stay available.<br>CRM, orders & freight remain disabled.</div>
+</aside>

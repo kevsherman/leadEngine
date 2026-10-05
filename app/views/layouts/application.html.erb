@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>Breeze Block · Inquiry desk</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="turbo-cache-control" content="no-cache">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <%= stylesheet_link_tag "tailwind", "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+  <body class="bg-stone-50 text-stone-800 antialiased">
+    <header class="topbar">
+      <a href="<%= root_path %>" class="brand"><span class="brand-mark">▦</span><span>BREEZE BLOCK<small>CANADA / INQUIRY DESK</small></span></a>
+      <div class="header-actions"><span class="badge">INQUIRY DESK · REVIEWED REPLIES</span><% if current_operator %><%= link_to "Gmail connection", gmail_connection_path, class: "text-link" %><span class="operator">Kevin · Operator</span><%= button_to "Sign out", session_path, method: :delete, class: "text-link" %><% end %></div>
+    </header>
+    <% flash.each do |type, message| %><div role="<%= type == 'alert' ? 'alert' : 'status' %>" class="flash <%= type %>"><%= message %></div><% end %>
+    <%= yield %>
+  </body>
+</html>

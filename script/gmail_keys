@@ -1,0 +1,13 @@
+#!/usr/bin/env ruby
+require "json"
+require "securerandom"
+require "fileutils"
+root = File.expand_path("..", __dir__)
+FileUtils.mkdir_p(File.join(root, ".local"))
+path = File.join(root, ".local/gmail-encryption.json")
+unless File.exist?(path)
+  File.open(path, File::WRONLY | File::CREAT | File::EXCL, 0600) do |file|
+    file.write(JSON.generate(%w[primary_key deterministic_key key_derivation_salt].to_h { |name| [ name, SecureRandom.hex(32) ] }))
+  end
+end
+puts "Gmail encryption keys ready (private local file; excluded from Git)."
