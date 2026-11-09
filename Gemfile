@@ -62,5 +62,5 @@ group :test do
   gem "selenium-webdriver"
 end
 
-gem "solid_queue", "~> 1.3"
+gem "solid_queue", "~> 1.7"
 gem "foreman", "~> 0.90"
